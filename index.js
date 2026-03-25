@@ -1,52 +1,48 @@
+// index.js
 const express = require('express');
 const multer = require('multer');
+const AWS = require('aws-sdk');
 const path = require('path');
-const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Ensure uploads folder exists
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
+// === 1️⃣ Statische Dateien ausliefern ===
+app.use(express.static('public'));
 
-// Configure multer 2.0.0
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
+// === 2️⃣ Upload Middleware ===
+const upload = multer({ storage: multer.memoryStorage() });
+
+// === 3️⃣ AWS S3 Setup ===
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,      // von Render Environment Variables
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION
+});
+
+// === 4️⃣ Upload-Route ===
+app.post('/upload', upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).send('Keine Datei hochgeladen');
+
+  const params = {
+    Bucket: process.env.AWS_BUCKET_NAME,          // von Render Environment Variables
+    Key: req.file.originalname,
+    Body: req.file.buffer
+  };
+
+  try {
+    const data = await s3.upload(params).promise();
+    res.send({ message: 'Upload erfolgreich!', url: data.Location });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Fehler beim Upload');
   }
 });
 
-const upload = multer({ storage: storage });
-
-// Single file upload endpoint
-app.post('/upload', upload.single('file'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).send('No file uploaded.');
-  }
-  res.send(`File uploaded successfully: ${req.file.filename}`);
+// === 5️⃣ Fallback für alle anderen Routen ===
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Optional: multiple files
-app.post('/upload-multiple', upload.array('files', 10), (req, res) => {
-  if (!req.files || req.files.length === 0) {
-    return res.status(400).send('No files uploaded.');
-  }
-  const filenames = req.files.map(f => f.filename);
-  res.send(`Files uploaded successfully: ${filenames.join(', ')}`);
-});
-
-// Simple root endpoint
-app.get('/', (req, res) => {
-  res.send('Hello! Use /upload to POST a file.');
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// === 6️⃣ Server starten ===
+app.listen(PORT, () => console.log(`Server läuft auf Port ${PORT}`));
