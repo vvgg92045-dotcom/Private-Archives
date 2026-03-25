@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Private Archive - TikTok Archiv</title>
+<title>Private Archive - TikTok Kanal</title>
 
-<!-- Manifest -->
-<link rel="manifest" href="/manifest.json">
-
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#111">
 <style>
+/* --- Global --- */
 body { margin:0; font-family:'Helvetica Neue', sans-serif; background:#111; color:#fff; overflow:hidden; }
 .content { display:flex; flex-wrap:wrap; justify-content:center; padding:20px; transition: all 0.3s; }
 .channel-card { width:150px; margin:15px; text-align:center; cursor:pointer; transition: transform 0.25s, box-shadow 0.25s; }
@@ -16,22 +17,25 @@ body { margin:0; font-family:'Helvetica Neue', sans-serif; background:#111; colo
 .channel-card img { width:100%; border-radius:50%; border:2px solid #fff; }
 .channel-card span { display:block; margin-top:8px; font-size:16px; font-weight:bold; }
 
-.video-grid { display:none; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap:15px; padding:20px; transition: all 0.3s; }
+/* --- Grid für Kanalvideos --- */
+.video-grid { display:none; grid-template-columns: repeat(3, 1fr); gap:15px; padding:20px; transition: all 0.3s; }
 .video-grid video { width:100%; height:auto; cursor:pointer; border-radius:12px; transition: transform 0.25s; }
 .video-grid video:hover { transform: scale(1.03); }
 
+/* --- Banner --- */
 .banner { display:none; position:relative; width:100%; height:200px; overflow:hidden; margin-bottom:15px; border-bottom:1px solid #333; border-radius:10px; }
 .banner .banner-overlay { position:absolute; top:0; left:0; width:100%; height:100%; filter: blur(15px) brightness(0.35); transition: all 0.3s; }
 .banner .name { position:absolute; bottom:15px; left:20px; font-size:28px; font-weight:bold; color:#fff; text-shadow:0 0 10px rgba(0,0,0,0.7); }
 
-#channelPlayer { display:none; width:320px; height:180px; margin:15px auto; object-fit:cover; border-radius:12px;
-  box-shadow:0 0 20px rgba(0,0,0,0.7); transition: all 0.3s; }
+/* --- Kleiner Player --- */
+#channelPlayer { display:none; width:320px; height:180px; margin:15px auto; object-fit:cover; border-radius:12px; box-shadow:0 0 20px rgba(0,0,0,0.7); transition: all 0.3s; }
 
+/* --- Feed Vollbild --- */
 .feed { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:50; overflow:hidden; }
 .feed video { width:100%; height:100%; object-fit:contain; background:#000; transition: opacity 0.3s; }
 
-.back-arrow, .back-to-home { position:absolute; top:20px; left:15px; width:50px; height:50px; background:rgba(0,0,0,0.4);
-  border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px; color:white; cursor:pointer; z-index:55; box-shadow:0 0 10px rgba(0,0,0,0.5); transition: all 0.3s; }
+/* --- Buttons --- */
+.back-arrow, .back-to-home { position:absolute; top:20px; left:15px; width:50px; height:50px; background:rgba(0,0,0,0.4); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px; color:white; cursor:pointer; z-index:55; box-shadow:0 0 10px rgba(0,0,0,0.5); transition: all 0.3s; }
 .back-arrow:hover, .back-to-home:hover { background:rgba(0,0,0,0.6); transform: scale(1.1); }
 
 body::-webkit-scrollbar { width:0; }
@@ -44,17 +48,17 @@ body::-webkit-scrollbar { width:0; }
 <h1 style="width:100%; text-align:center; margin-bottom:20px;">🎬 Private Archive</h1>
 </div>
 
-<!-- Banner Kanal -->
+<!-- Banner -->
 <div class="banner" id="banner">
   <div class="banner-overlay"></div>
   <div class="name" id="bannerName"></div>
   <div class="back-to-home" id="backToHome">←</div>
 </div>
 
-<!-- Video-Grid Kanal -->
+<!-- Video Grid -->
 <div class="video-grid" id="videoGrid"></div>
 
-<!-- Kleiner Player unter Grid -->
+<!-- Kleiner Player -->
 <video id="channelPlayer" autoplay muted></video>
 
 <!-- Vollbild Feed -->
@@ -63,807 +67,117 @@ body::-webkit-scrollbar { width:0; }
   <video id="feedVideo" autoplay muted></video>
 </div>
 
-<script src="/js/main.js"></script>
 <script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js')
-  .then(()=>console.log("SW registered"))
-  .catch(()=>console.log("SW failed"));
-}
-</script>
-</body>
-</html> video{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:6px;cursor:pointer;}
-#uploadBtn{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#00ff88;border:none;padding:15px;border-radius:50%;font-size:24px;z-index:100;}
-.feed{display:none;position:fixed;width:100%;height:100%;background:black;z-index:999;}
-.feed video{width:100%;height:100%;object-fit:contain;}
-.back{position:absolute;top:20px;left:20px;width:50px;height:50px;background:rgba(0,0,0,.6);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;z-index:100;}
-.vote-container{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:101;}
-.vote-btn{padding:10px 20px;background:#00ff88;border:none;border-radius:6px;font-size:16px;cursor:pointer;}
-.profile-btn{position:fixed;top:20px;right:20px;width:50px;height:50px;border-radius:50%;background:#00ff88;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;z-index:101;}
-.search-bar{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:101;}
-.search-bar input{padding:5px 10px;border-radius:6px;border:none;font-size:16px;}
-</style>
-</head>
-<body>
-
-<h1>🎬 Private Archive</h1>
-<div id="grid" class="grid"></div>
-<button id="uploadBtn">＋</button>
-<div class="profile-btn" id="profileBtn">👤</div>
-<div class="search-bar">
-  <input type="text" id="searchInput" placeholder="Suchen...">
-</div>
-
-<!-- Feed -->
-<div class="feed" id="feed">
- <div class="back" id="backBtn">←</div>
- <video id="video" controls></video>
- <div class="vote-container">
-   <button class="vote-btn" onclick="vote('up')">👍 Like</button>
-   <button class="vote-btn" onclick="vote('down')">👎 Dislike</button>
- </div>
-</div>
-
-<script>
-// 🌟 Cloudinary Settings
-const CLOUD_NAME = "do5gpmvvg";
-const UPLOAD_PRESET = "archive_upload";
-
-// Videos Array
-let allVideos = JSON.parse(localStorage.getItem("videos")) || [];
-
-// Grid Render
-function renderGrid(){
- const grid = document.getElementById("grid");
- grid.innerHTML="";
- allVideos.forEach((v,i)=>{
-   const vid = document.createElement("video");
-   vid.src=v.url;
-   vid.onclick=()=>openFeed(i);
-   grid.appendChild(vid);
- });
-}
-
-// Feed
-let currentIndex = 0;
+// --- Globals ---
+const uploadsPath = "uploads/";
+let data = {}, activeChannel = "", currentVideoIndex = 0;
+const content = document.getElementById("content");
+const videoGrid = document.getElementById("videoGrid");
+const banner = document.getElementById("banner");
+const bannerOverlay = banner.querySelector(".banner-overlay");
+const bannerName = document.getElementById("bannerName");
+const channelPlayer = document.getElementById("channelPlayer");
 const feed = document.getElementById("feed");
-const videoEl = document.getElementById("video");
+const feedVideo = document.getElementById("feedVideo");
+const backArrow = document.getElementById("backArrow");
+const backToHome = document.getElementById("backToHome");
 
-function openFeed(i){
- currentIndex = i;
- feed.style.display="block";
- videoEl.src = allVideos[i].url;
- videoEl.play();
+// --- Load Channels ---
+async function loadChannels(){
+  try{
+    const res = await fetch('/api/channels');
+    data = await res.json();
+    showChannels();
+  } catch(e){ console.error(e); }
 }
 
-document.getElementById("backBtn").onclick = ()=>{
- videoEl.pause();
- feed.style.display="none";
-}
-
-// Voting
-function vote(type){
- if(!allVideos[currentIndex].votes) allVideos[currentIndex].votes={up:0,down:0};
- allVideos[currentIndex].votes[type]++;
- localStorage.setItem("videos",JSON.stringify(allVideos));
- alert(`Votes: 👍 ${allVideos[currentIndex].votes.up} 👎 ${allVideos[currentIndex].votes.down}`);
-}
-
-// Upload Button
-document.getElementById("uploadBtn").onclick = ()=>{
- let input = document.createElement("input");
- input.type="file";
- input.accept="video/*";
- input.onchange = async ()=>{
-   let file = input.files[0];
-   let formData = new FormData();
-   formData.append("file", file);
-   formData.append("upload_preset", UPLOAD_PRESET);
-   try{
-     const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`,{
-       method:"POST", body:formData
-     });
-     const data = await res.json();
-     allVideos.push({url:data.secure_url});
-     localStorage.setItem("videos",JSON.stringify(allVideos));
-     renderGrid();
-     alert("Upload abgeschlossen 🚀");
-   }catch(e){alert("Upload fehlgeschlagen");console.error(e);}
- };
- input.click();
-}
-
-// Profile Button (Dummy)
-document.getElementById("profileBtn").onclick = ()=>{
- alert("Profil-Bereich öffnen (hier kann Hintergrund / Profilbild / Videos eingestellt werden)");
-}
-
-// Search
-document.getElementById("searchInput").addEventListener("input", e=>{
- const val = e.target.value.toLowerCase();
- const grid = document.getElementById("grid");
- grid.innerHTML="";
- allVideos.filter(v=>v.url.toLowerCase().includes(val)).forEach((v,i)=>{
-   const vid = document.createElement("video");
-   vid.src=v.url;
-   vid.onclick=()=>openFeed(i);
-   grid.appendChild(vid);
- });
-});
-
-// PWA
-if('serviceWorker' in navigator){
- navigator.serviceWorker.register('/sw.js').then(()=>console.log("SW registered"));
-}
-
-// Initial
-window.onload = renderGrid;
-</script>
-</body>
-</html>
-.back,.sound{
- position:absolute;width:45px;height:45px;
- background:rgba(0,0,0,.6);
- border-radius:50%;
- display:flex;align-items:center;justify-content:center;
- cursor:pointer;
-}
-.back{top:20px;left:20px;}
-.sound{top:20px;right:20px;}
-
-.like,.fav{
- position:absolute;
- right:20px;
- font-size:30px;
- cursor:pointer;
-}
-.like{bottom:140px;}
-.fav{bottom:90px;}
-
-#views{
- position:absolute;bottom:60px;right:20px;font-size:14px;
-}
-
-#progress{
- position:absolute;bottom:0;height:5px;background:#00ff88;width:0%;
-}
-
-/* SEARCH */
-.searchPage{display:none;margin-top:60px}
-.searchInput{
- width:100%;padding:15px;background:#111;color:#fff;border:none;
-}
-
-/* PROFILE */
-.profile{display:none;margin-top:60px;text-align:center}
-.profile img{width:120px;border-radius:50%}
-
-/* BUTTONS */
-#highlightBtn,#voteBtn{
- position:fixed;
- left:50%;
- transform:translateX(-50%);
- padding:10px 20px;
- border:none;border-radius:10px;
- z-index:200;
-}
-#highlightBtn{bottom:90px;background:#00ff88;}
-#voteBtn{bottom:40px;background:#ff0077;color:#fff;}
-
-#installBtn{
- position:fixed;bottom:20px;right:20px;
- padding:10px;background:#00ff88;color:#000;
- border:none;border-radius:10px;
- display:none;
-}
-</style>
-</head>
-
-<body>
-
-<video id="bgVideo" muted autoplay loop></video>
-
-<div class="topbar">
- <div class="tab active" onclick="switchTab('foryou',this)">For You</div>
- <div class="tab" onclick="switchTab('search',this)">Suche</div>
- <div class="tab" onclick="switchTab('profile',this)">Profil</div>
-</div>
-
-<div id="foryou" class="grid"></div>
-
-<div id="searchPage" class="searchPage">
- <input class="searchInput" placeholder="🔍 Suche" oninput="search(this.value)">
- <div id="searchGrid" class="grid"></div>
-</div>
-
-<div id="profile" class="profile">
- <h2 id="username"></h2>
- <img id="profileImg"><br><br>
- <input id="nameInput" placeholder="Name"><br><br>
- <button onclick="saveProfile()">Speichern</button>
-</div>
-
-<button id="highlightBtn" onclick="createHighlight()">🎬 Highlight</button>
-<button id="voteBtn" onclick="startVote()">⚔️ Vote</button>
-
-<div class="feed" id="feed">
- <div class="back" onclick="closeFeed()">←</div>
- <div class="sound" onclick="toggleSound()">🔊</div>
- <video id="video"></video>
-
- <div class="like" onclick="like()">❤️</div>
- <div class="fav" onclick="fav()">⭐</div>
- <div id="views"></div>
-
- <div id="progress"></div>
-</div>
-
-<button id="installBtn">Install</button>
-
-<script>
-
-/* CLOUDINARY VIDEOS */
-let allVideos = [
- {
-  ch:"main",
-  url:"https://res.cloudinary.com/do5gpmvvg/video/upload/q_auto/sample.mp4"
- }
-];
-
-/* PROFILE DEFAULT */
-localStorage.setItem("profileImg","https://res.cloudinary.com/do5gpmvvg/image/upload/f_auto,q_auto/profile_pygvp9");
-
-let index=0,selectedVideos=[];
-let likes={},views={},favs={};
-
-const video=document.getElementById("video");
-
-/* LOAD */
-function load(){
- startBG();
- loadGrid();
- loadProfile();
-}
-
-/* BACKGROUND */
-function startBG(){
- let vids=allVideos.map(v=>v.url);
- let i=0;
- function next(){
-  bgVideo.src=vids[i];
-  bgVideo.play();
-  i=(i+1)%vids.length;
- }
- bgVideo.onended=next;
- next();
-}
-
-/* GRID */
-function loadGrid(){
- foryou.innerHTML="";
- allVideos.forEach((v,i)=>{
-  let vid=document.createElement("video");
-  vid.src=v.url;
-  vid.muted=true;
-
-  vid.onclick=()=>{
-   if(selectedVideos.includes(i)){
-    selectedVideos=selectedVideos.filter(x=>x!==i);
-    vid.classList.remove("selected");
-   }else{
-    selectedVideos.push(i);
-    vid.classList.add("selected");
-   }
-  };
-
-  vid.ondblclick=()=>openFeed(i);
-
-  foryou.appendChild(vid);
- });
-}
-
-/* SEARCH */
-function search(q){
- searchGrid.innerHTML="";
- allVideos.forEach((v,i)=>{
-  if(v.ch.toLowerCase().includes(q.toLowerCase())){
-   let vid=document.createElement("video");
-   vid.src=v.url;
-   vid.onclick=()=>openFeed(i);
-   searchGrid.appendChild(vid);
-  }
- });
-}
-
-/* FEED */
-function openFeed(i){
- index=i;
- feed.style.display="block";
- play();
-}
-
-function play(){
- video.src=allVideos[index].url;
- video.play();
-}
-
-function closeFeed(){
- video.pause();
- video.src="";
- feed.style.display="none";
-}
-
-/* SOUND */
-function toggleSound(){
- video.muted=!video.muted;
-}
-
-/* LIKE */
-function like(){likes[index]=(likes[index]||0)+1;}
-function fav(){favs[index]=true;}
-video.onplay=()=>views[index]=(views[index]||0)+1;
-
-/* PROGRESS */
-video.ontimeupdate=()=>{
- progress.style.width=(video.currentTime/video.duration*100)+"%";
-};
-
-/* SWIPE */
-let startY=0;
-feed.addEventListener("touchstart",e=>startY=e.touches[0].clientY);
-feed.addEventListener("touchend",e=>{
- let endY=e.changedTouches[0].clientY;
- if(startY-endY>50) next();
- if(endY-startY>50) prev();
-});
-function next(){index=(index+1)%allVideos.length;play();}
-function prev(){index=(index-1+allVideos.length)%allVideos.length;play();}
-
-/* HIGHLIGHT */
-async function createHighlight(){
- if(selectedVideos.length<2){alert("Mind. 2 Videos!");return;}
-
- const canvas=document.createElement("canvas");
- const ctx=canvas.getContext("2d");
- const stream=canvas.captureStream(30);
- const rec=new MediaRecorder(stream);
-
- let chunks=[];
- rec.ondataavailable=e=>chunks.push(e.data);
-
- rec.onstop=()=>{
-   const url=URL.createObjectURL(new Blob(chunks));
-   let v=document.createElement("video");
-   v.src=url;v.controls=true;v.autoplay=true;
-   v.style.position="fixed";
-   v.style.width="80%";
-   v.style.top="50%";
-   v.style.left="50%";
-   v.style.transform="translate(-50%,-50%)";
-   document.body.appendChild(v);
- };
-
- rec.start();
-
- for(let i of selectedVideos){
-   await clip(i,ctx,canvas);
- }
-
- rec.stop();
- selectedVideos=[];
-}
-
-function clip(i,ctx,canvas){
- return new Promise(res=>{
-   let v=document.createElement("video");
-   v.src=allVideos[i].url;
-   v.muted=true;
-
-   v.onloadeddata=()=>{
-     canvas.width=v.videoWidth;
-     canvas.height=v.videoHeight;
-
-     v.currentTime position:fixed;top:0;width:100%;z-index:100;
-}
-.tab{opacity:.5;cursor:pointer}
-.tab.active{opacity:1;font-weight:bold}
-
-/* GRID */
-.grid{
- display:grid;
- grid-template-columns:repeat(3,1fr);
- gap:5px;
- padding:5px;
- margin-top:60px;
-}
-.grid video{
- width:100%;
- aspect-ratio:9/16;
- object-fit:cover;
- border-radius:6px;
-}
-.selected{outline:3px solid #00ff88}
-
-/* BG */
-#bgVideo{
- position:fixed;width:100%;height:100%;
- object-fit:cover;z-index:-1;opacity:.25;
-}
-
-/* FEED */
-.feed{
- display:none;
- position:fixed;
- width:100%;height:100%;
- background:black;
- z-index:999;
-}
-.feed video{
- width:100%;height:100%;
- object-fit:contain;
-}
-
-/* UI */
-.back,.sound{
- position:absolute;width:45px;height:45px;
- background:rgba(0,0,0,.6);
- border-radius:50%;
- display:flex;align-items:center;justify-content:center;
- cursor:pointer;
-}
-.back{top:20px;left:20px;}
-.sound{top:20px;right:20px;}
-
-.like,.fav{
- position:absolute;
- right:20px;
- font-size:30px;
- cursor:pointer;
-}
-.like{bottom:140px;}
-.fav{bottom:90px;}
-
-#views{
- position:absolute;bottom:60px;right:20px;font-size:14px;
-}
-
-#progress{
- position:absolute;bottom:0;height:5px;background:#00ff88;width:0%;
-}
-
-/* SEARCH */
-.searchPage{display:none;margin-top:60px}
-.searchInput{
- width:100%;padding:15px;background:#111;color:#fff;border:none;
-}
-
-/* PROFILE */
-.profile{display:none;margin-top:60px;text-align:center}
-.profile img{width:120px;border-radius:50%}
-
-/* BUTTONS */
-#highlightBtn,#voteBtn{
- position:fixed;
- left:50%;
- transform:translateX(-50%);
- padding:10px 20px;
- border:none;border-radius:10px;
- z-index:200;
-}
-#highlightBtn{bottom:90px;background:#00ff88;}
-#voteBtn{bottom:40px;background:#ff0077;color:#fff;}
-
-#installBtn{
- position:fixed;bottom:20px;right:20px;
- padding:10px;background:#00ff88;color:#000;
- border:none;border-radius:10px;
- display:none;
-}
-</style>
-</head>
-
-<body>
-
-<video id="bgVideo" muted autoplay loop></video>
-
-<div class="topbar">
- <div class="tab active" onclick="switchTab('foryou',this)">For You</div>
- <div class="tab" onclick="switchTab('sub',this)">Abonniert</div>
- <div class="tab" onclick="switchTab('trending',this)"></div>
- <div class="tab" onclick="switchTab('search',this)">Suche</div>
- <div class="tab" onclick="switchTab('profile',this)">Profil</div>
-</div>
-
-<div id="foryou" class="grid"></div>
-<div id="sub" class="grid" style="display:none"></div>
-<div id="trending" class="grid" style="display:none"></div>
-
-<div id="searchPage" class="searchPage">
- <input class="searchInput" placeholder=" Suche" oninput="search(this.value)">
- <div id="searchGrid" class="grid"></div>
-</div>
-
-<div id="profile" class="profile">
- <h2 id="username"></h2>
- <input id="nameInput" placeholder="Name"><br><br>
- <input type="file" id="imgUpload"><br><br>
- <input type="color" id="borderColor"><br><br>
- <button onclick="saveProfile()">Speichern</button>
-</div>
-
-<button id="highlightBtn" onclick="createHighlight()"> Highlight</button>
-<button id="voteBtn" onclick="startVote()"> Vote</button>
-
-<div class="feed" id="feed">
- <div class="back" onclick="closeFeed()"></div>
- <div class="sound" onclick="toggleSound()"></div>
- <video id="video"></video>
-
- <div class="like" onclick="like()"></div>
- <div class="fav" onclick="fav()"></div>
- <div id="views"></div>
-
- <div id="progress"></div>
-</div>
-
-<button id="installBtn">Install</button>
-
-<script>
-const uploads="uploads/";
-let data={},allVideos=[],index=0,selectedVideos=[];
-let likes={},views={},favs={};
-
-const video=document.getElementById("video");
-
-/* LOAD */
-async function load(){
- const res=await fetch('/api/channels');
- data=await res.json();
-
- Object.keys(data).forEach(ch=>{
-  data[ch].forEach(v=>allVideos.push({ch,v}));
- });
-
- startBG();
- loadGrid();
-}
-
-/* BG FIX (kein delay) */
-function startBG(){
- let vids=allVideos.map(v=>`${uploads}${v.ch}/${v.v}`);
- let i=0;
-
- function playNext(){
-   bgVideo.src=vids[i];
-   bgVideo.play();
-   i=(i+1)%vids.length;
- }
-
- bgVideo.onended=playNext;
- playNext();
-}
-
-/* GRID */
-function loadGrid(){
- foryou.innerHTML="";
- allVideos.forEach((v,i)=>{
-  let vid=document.createElement("video");
-  vid.src=`${uploads}${v.ch}/${v.v}`;
-  vid.muted=true;
-  vid.preload="metadata";
-
-  vid.onclick=()=>{
-    if(selectedVideos.includes(i)){
-      selectedVideos=selectedVideos.filter(x=>x!==i);
-      vid.classList.remove("selected");
-    }else{
-      selectedVideos.push(i);
-      vid.classList.add("selected");
-    }
-  };
-
-  vid.ondblclick=()=>openFeed(i);
-
-  foryou.appendChild(vid);
- });
-}
-
-/* SEARCH FIX */
-function search(q){
- searchGrid.innerHTML="";
- Object.keys(data).forEach(ch=>{
-  data[ch].forEach(v=>{
-    if(ch.toLowerCase().includes(q.toLowerCase())){
-      let vid=document.createElement("video");
-      vid.src=`${uploads}${ch}/${v}`;
-      vid.onclick=()=>openFeed(index);
-      searchGrid.appendChild(vid);
-    }
+// --- Show Channels ---
+function showChannels(){
+  content.style.display="flex";
+  banner.style.display="none";
+  videoGrid.style.display="none";
+  feed.style.display="none";
+  channelPlayer.style.display="none";
+
+  content.innerHTML = '<h1 style="width:100%; text-align:center; margin-bottom:20px;">🎬 Private Archive</h1>';
+  Object.keys(data).forEach(channel=>{
+    const card = document.createElement("div"); card.className="channel-card";
+    const img = document.createElement("img"); img.src=`${uploadsPath}${channel}/profile.jpg`;
+    img.onerror = ()=>{ img.src="https://res.cloudinary.com/do5gpmvvg/image/upload/f_auto,q_auto/profile_pygvp9"; }
+    const name = document.createElement("span"); name.innerText = channel;
+    card.appendChild(img); card.appendChild(name);
+    card.onclick = ()=>openChannel(channel);
+    content.appendChild(card);
   });
- });
 }
 
-/* FEED */
-function openFeed(i){
- index=i;
- feed.style.display="block";
- play();
- enterFullscreen();
+// --- Open Channel ---
+function openChannel(channel){
+  activeChannel = channel;
+  content.style.display="none";
+  feed.style.display="none";
+  videoGrid.style.display="grid";
+  channelPlayer.style.display="none";
+
+  banner.style.background = `url('${uploadsPath}${channel}/profile.jpg') center/cover no-repeat`;
+  bannerOverlay.style.filter = "blur(15px) brightness(0.35)";
+  bannerName.innerText = channel;
+  banner.style.display="block";
+
+  videoGrid.innerHTML="";
+  data[channel].forEach((v,i)=>{
+    const vid = document.createElement("video");
+    vid.src = `${uploadsPath}${channel}/${v}`;
+    vid.onclick = ()=>openFeed(i);
+    vid.onmouseenter = ()=>playChannelPreview(v);
+    videoGrid.appendChild(vid);
+  });
 }
 
-function play(){
- let v=allVideos[index];
- video.src=`${uploads}${v.ch}/${v.v}`;
- video.play();
+// --- Preview ---
+function playChannelPreview(video){
+  channelPlayer.src = `${uploadsPath}${activeChannel}/${video}`;
+  channelPlayer.style.display="block";
+  channelPlayer.currentTime = 0;
+  channelPlayer.muted = true;
+  channelPlayer.play();
 }
 
-function closeFeed(){
- video.pause();
- video.src="";
- feed.style.display="none";
- if(document.fullscreenElement) document.exitFullscreen();
+// --- Feed Vollbild ---
+function openFeed(index){
+  currentVideoIndex = index;
+  content.style.display="none";
+  videoGrid.style.display="none";
+  banner.style.display="none";
+  channelPlayer.style.display="none";
+  feed.style.display="block";
+  playVideo();
 }
 
-/* SOUND FIX */
-function toggleSound(){
- video.muted=!video.muted;
+function playVideo(){
+  feedVideo.src = `${uploadsPath}${activeChannel}/${data[activeChannel][currentVideoIndex]}`;
+  feedVideo.currentTime = 0;
+  feedVideo.muted = false;
+  feedVideo.play();
 }
 
-/* LIKE / VIEW */
-function like(){likes[index]=(likes[index]||0)+1;}
-function fav(){favs[index]=true;}
-video.onplay=()=>views[index]=(views[index]||0)+1;
+function nextVideo(){ currentVideoIndex=(currentVideoIndex+1)%data[activeChannel].length; playVideo(); }
+function prevVideo(){ currentVideoIndex=(currentVideoIndex-1+data[activeChannel].length)%data[activeChannel].length; playVideo(); }
 
-/* PROGRESS */
-video.ontimeupdate=()=>{
- progress.style.width=(video.currentTime/video.duration*100)+"%";
-};
-
-/* SWIPE */
+// --- Swipe ---
 let startY=0;
-feed.addEventListener("touchstart",e=>startY=e.touches[0].clientY);
-feed.addEventListener("touchend",e=>{
- let endY=e.changedTouches[0].clientY;
- if(startY-endY>50) next();
- if(endY-startY>50) prev();
-});
-function next(){index=(index+1)%allVideos.length;play();}
-function prev(){index=(index-1+allVideos.length)%allVideos.length;play();}
-
-/* FULLSCREEN */
-function enterFullscreen(){
- if(feed.requestFullscreen) feed.requestFullscreen();
-}
-
-/* HIGHLIGHT FINAL */
-async function createHighlight(){
- if(selectedVideos.length<2){alert("Mind. 2 Videos!");return;}
-
- const canvas=document.createElement("canvas");
- const ctx=canvas.getContext("2d");
- const stream=canvas.captureStream(30);
- const rec=new MediaRecorder(stream);
-
- let chunks=[];
- rec.ondataavailable=e=>chunks.push(e.data);
-
- rec.onstop=()=>{
-   const url=URL.createObjectURL(new Blob(chunks));
-   let v=document.createElement("video");
-   v.src=url;v.controls=true;v.autoplay=true;
-   v.style.position="fixed";
-   v.style.width="80%";
-   v.style.top="50%";
-   v.style.left="50%";
-   v.style.transform="translate(-50%,-50%)";
-   document.body.appendChild(v);
- };
-
- rec.start();
-
- for(let i of selectedVideos){
-   await clip(i,ctx,canvas);
- }
-
- rec.stop();
- selectedVideos=[];
-}
-
-function clip(i,ctx,canvas){
- return new Promise(res=>{
-   let v=document.createElement("video");
-   let d=allVideos[i];
-
-   v.src=`${uploads}${d.ch}/${d.v}`;
-   v.muted=true;
-   v.preload="auto";
-
-   v.onloadeddata=()=>{
-     canvas.width=v.videoWidth;
-     canvas.height=v.videoHeight;
-
-     v.currentTime=v.duration*0.3;
-     v.play();
-
-     let start=null;
-
-     function draw(t){
-       if(!start) start=t;
-       if(v.readyState>=2) ctx.drawImage(v,0,0,canvas.width,canvas.height);
-
-       if((t-start)/1000<2.5){
-         requestAnimationFrame(draw);
-       }else{
-         v.pause();
-         res();
-       }
-     }
-
-     requestAnimationFrame(draw);
-   };
- });
-}
-
-/* VOTE SYSTEM */
-function startVote(){
- if(selectedVideos.length<2){alert("2 Videos wählen!");return;}
-
- let a=selectedVideos[0],b=selectedVideos[1];
-
- let v1=allVideos[a],v2=allVideos[b];
-
- let box=document.createElement("div");
- box.style.position="fixed";
- box.style.width="100%";
- box.style.height="100%";
- box.style.display="flex";
-
- box.innerHTML=`
- <video src="${uploads+v1.ch+'/'+v1.v}" style="width:50%" autoplay muted></video>
- <video src="${uploads+v2.ch+'/'+v2.v}" style="width:50%" autoplay muted></video>
- `;
-
- box.onclick=e=>{
-   alert("Gewählt!");
-   box.remove();
- };
-
- document.body.appendChild(box);
-}
-
-/* PROFILE */
-function saveProfile(){
- localStorage.setItem("username",nameInput.value);
- username.innerText=nameInput.value;
-}
-
-/* TABS */
-function switchTab(tab,el){
- document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
- el.classList.add("active");
-
- foryou.style.display="none";
- sub.style.display="none";
- trending.style.display="none";
- searchPage.style.display="none";
- profile.style.display="none";
-
- if(tab==="foryou") foryou.style.display="grid";
- if(tab==="search") searchPage.style.display="block";
- if(tab==="profile") profile.style.display="block";
-}
-
-/* PWA */
-let deferredPrompt;
-installBtn.onclick=()=>deferredPrompt.prompt();
-window.addEventListener("beforeinstallprompt",e=>{
- e.preventDefault();
- deferredPrompt=e;
- installBtn.style.display="block";
+feed.addEventListener("touchstart", e=>{ startY=e.touches[0].clientY; });
+feed.addEventListener("touchend", e=>{
+  let endY=e.changedTouches[0].clientY;
+  if(startY-endY>50) nextVideo();
+  if(endY-startY>50) prevVideo();
 });
 
-window.onload=load;
+// --- Buttons ---
+backArrow.onclick = ()=>{ feedVideo.pause(); feedVideo.src=""; openChannel(activeChannel); }
+backToHome.onclick = ()=>{ videoGrid.style.display="none"; banner.style.display="none"; channelPlayer.style.display="none"; content.style.display="flex"; }
+
+window.onload = loadChannels;
 </script>
-
 </body>
 </html>
