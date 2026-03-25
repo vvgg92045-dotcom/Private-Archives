@@ -1,15 +1,26 @@
 // server.js
 const express = require('express');
-const fs = require('fs');
 const path = require('path');
 const app = express();
-const uploadsDir = path.join(__dirname, 'uploads');
+
+const PORT = process.env.PORT || 3000;
 
 // Statische Dateien
-app.use('/uploads', express.static(uploadsDir));
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname)));
 
-// API: Kanäle + Videos
+// Route für Startseite
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
+// Optional: API für Videos (falls nötig)
+app.get("/api/videos", (req, res) => {
+  // Dummy-Array, kann erweitert werden
+  res.json([]);
+});
+
+// Start Server
+app.listen(PORT, () => console.log(`Server läuft auf Port ${PORT}`));
 app.get('/api/channels', (req, res) => {
   let result = {};
   fs.readdirSync(uploadsDir).forEach(folder => {
