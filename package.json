@@ -1,15 +1,16 @@
 {
   "name": "private-archives",
   "version": "1.0.0",
+  "description": "Private Archive TikTok-style Web App",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
-  "dependencies": {
-    "express": "^5.2.1"
-  }
 }
