@@ -1,7 +1,7 @@
 {
-  "name": "private-archive",
+  "name": "my-app",
   "version": "1.0.0",
-  "description": "Private Archive App with Backblaze B2",
+  "description": "Private Archive with Backblaze B2",
   "main": "index.js",
   "type": "module",
   "engines": {
