@@ -1,44 +1,58 @@
 import express from 'express';
-import B2 from 'backblaze-b2';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import B2 from '@backblaze/b2';
 
-dotenv.config(); // Load .env if exists
+dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Backblaze B2 init
 const b2 = new B2({
-  applicationKeyId: process.env.B2_KEY_ID || 'YOUR_KEY_ID',
-  applicationKey: process.env.B2_APP_KEY || 'YOUR_APP_KEY'
+  applicationKeyId: process.env.B2_ACCOUNT_ID,
+  applicationKey: process.env.B2_APPLICATION_KEY
 });
 
+// Authentifizierung
 await b2.authorize();
 
-const BUCKET = process.env.BUCKET_NAME || 'private-archive-videos';
+// Beispiel: Liste aller Dateien im Bucket
+async function listFiles() {
+  const res = await b2.listFileNames({ bucketId: process.env.B2_BUCKET_NAME });
+  return res.data.files.map(f => f.fileName);
+}
 
-// Endpoint to return all videos/images by channel
-app.get('/api/channels', async (req, res) => {
+// Route für Frontend
+app.get('/api/videos', async (req, res) => {
   try {
-    const list = await b2.listFileNames({ bucketId: BUCKET });
-    const data = {};
-
-    list.data.files.forEach(file => {
-      const [channel, fileName] = file.fileName.split('/');
-      if (!data[channel]) data[channel] = [];
-      data[channel].push(`https://f002.backblazeb2.com/file/${BUCKET}/${file.fileName}`);
-    });
-
-    res.json(data);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Error fetching files from B2');
+    const files = await listFiles();
+    // Optional: nur Videos anzeigen
+    const videos = files.filter(f => /\.(mp4|mov|webm)$/i.test(f));
+    res.json({ videos });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'B2 Fehler' });
   }
 });
 
-app.use(express.static('public'));
+// Route für direkte Video-URL
+app.get('/api/video/:name', async (req, res) => {
+  const fileName = req.params.name;
+  try {
+    const download = await b2.getDownloadAuthorization({
+      bucketId: process.env.B2_BUCKET_NAME,
+      fileNamePrefix: fileName,
+      validDurationInSeconds: 3600 // 1h Link
+    });
+    res.json({ url: `${process.env.B2_ENDPOINT}${process.env.B2_BUCKET_NAME}/${fileName}` });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'B2 Download Fehler' });
+  }
+});
 
 app.listen(process.env.PORT || 3000, () => {
-  console.log('Server running');
+  console.log(`Server läuft auf Port ${process.env.PORT || 3000}`);
 });
