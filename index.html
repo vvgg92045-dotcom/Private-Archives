@@ -3,13 +3,76 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Private Archive PRO</title>
-<link rel="manifest" href="manifest.json">
+<title>Private Archive - TikTok Archiv</title>
+
+<!-- Manifest -->
+<link rel="manifest" href="/manifest.json">
+
 <style>
-body{margin:0;font-family:sans-serif;background:#000;color:#fff;overflow:hidden;}
-h1{text-align:center;padding:10px;}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:5px;margin-top:50px;}
-.grid video{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:6px;cursor:pointer;}
+body { margin:0; font-family:'Helvetica Neue', sans-serif; background:#111; color:#fff; overflow:hidden; }
+.content { display:flex; flex-wrap:wrap; justify-content:center; padding:20px; transition: all 0.3s; }
+.channel-card { width:150px; margin:15px; text-align:center; cursor:pointer; transition: transform 0.25s, box-shadow 0.25s; }
+.channel-card:hover { transform: scale(1.08); box-shadow:0 4px 15px rgba(0,0,0,0.6); }
+.channel-card img { width:100%; border-radius:50%; border:2px solid #fff; }
+.channel-card span { display:block; margin-top:8px; font-size:16px; font-weight:bold; }
+
+.video-grid { display:none; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap:15px; padding:20px; transition: all 0.3s; }
+.video-grid video { width:100%; height:auto; cursor:pointer; border-radius:12px; transition: transform 0.25s; }
+.video-grid video:hover { transform: scale(1.03); }
+
+.banner { display:none; position:relative; width:100%; height:200px; overflow:hidden; margin-bottom:15px; border-bottom:1px solid #333; border-radius:10px; }
+.banner .banner-overlay { position:absolute; top:0; left:0; width:100%; height:100%; filter: blur(15px) brightness(0.35); transition: all 0.3s; }
+.banner .name { position:absolute; bottom:15px; left:20px; font-size:28px; font-weight:bold; color:#fff; text-shadow:0 0 10px rgba(0,0,0,0.7); }
+
+#channelPlayer { display:none; width:320px; height:180px; margin:15px auto; object-fit:cover; border-radius:12px;
+  box-shadow:0 0 20px rgba(0,0,0,0.7); transition: all 0.3s; }
+
+.feed { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:50; overflow:hidden; }
+.feed video { width:100%; height:100%; object-fit:contain; background:#000; transition: opacity 0.3s; }
+
+.back-arrow, .back-to-home { position:absolute; top:20px; left:15px; width:50px; height:50px; background:rgba(0,0,0,0.4);
+  border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px; color:white; cursor:pointer; z-index:55; box-shadow:0 0 10px rgba(0,0,0,0.5); transition: all 0.3s; }
+.back-arrow:hover, .back-to-home:hover { background:rgba(0,0,0,0.6); transform: scale(1.1); }
+
+body::-webkit-scrollbar { width:0; }
+</style>
+</head>
+<body>
+
+<!-- Startseite -->
+<div class="content" id="content">
+<h1 style="width:100%; text-align:center; margin-bottom:20px;">🎬 Private Archive</h1>
+</div>
+
+<!-- Banner Kanal -->
+<div class="banner" id="banner">
+  <div class="banner-overlay"></div>
+  <div class="name" id="bannerName"></div>
+  <div class="back-to-home" id="backToHome">←</div>
+</div>
+
+<!-- Video-Grid Kanal -->
+<div class="video-grid" id="videoGrid"></div>
+
+<!-- Kleiner Player unter Grid -->
+<video id="channelPlayer" autoplay muted></video>
+
+<!-- Vollbild Feed -->
+<div class="feed" id="feed">
+  <div class="back-arrow" id="backArrow">←</div>
+  <video id="feedVideo" autoplay muted></video>
+</div>
+
+<script src="/js/main.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js')
+  .then(()=>console.log("SW registered"))
+  .catch(()=>console.log("SW failed"));
+}
+</script>
+</body>
+</html> video{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:6px;cursor:pointer;}
 #uploadBtn{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#00ff88;border:none;padding:15px;border-radius:50%;font-size:24px;z-index:100;}
 .feed{display:none;position:fixed;width:100%;height:100%;background:black;z-index:999;}
 .feed video{width:100%;height:100%;object-fit:contain;}
