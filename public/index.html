@@ -5,17 +5,38 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#000">
 <title>Private Archive ULTIMATE</title>
-
 <style>
-/* Dein komplettes CSS aus vorherigem HTML */
+/* Styles wie zuvor, Topbar, Grid, Feed, Buttons, etc. */
 body{margin:0;background:#000;color:#fff;font-family:sans-serif}
-/* ... alles andere bleibt unverändert ... */
+.topbar{display:flex;justify-content:space-around;padding:10px;background:#000;position:fixed;top:0;width:100%;z-index:100;}
+.tab{opacity:.5;cursor:pointer}
+.tab.active{opacity:1;font-weight:bold}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:5px;margin-top:60px;}
+.grid video{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:6px;}
+.selected{outline:3px solid #00ff88;}
+#bgVideo{position:fixed;width:100%;height:100%;object-fit:cover;z-index:-1;opacity:.25;}
+.feed{display:none;position:fixed;width:100%;height:100%;background:black;z-index:999;}
+.feed video{width:100%;height:100%;object-fit:contain;}
+.back,.sound{position:absolute;width:45px;height:45px;background:rgba(0,0,0,.6);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.back{top:20px;left:20px;}
+.sound{top:20px;right:20px;}
+.like,.fav{position:absolute;right:20px;font-size:30px;cursor:pointer;}
+.like{bottom:140px;}
+.fav{bottom:90px;}
+#views{position:absolute;bottom:60px;right:20px;font-size:14px;}
+#progress{position:absolute;bottom:0;height:5px;background:#00ff88;width:0%;}
+.searchPage{display:none;margin-top:60px;}
+.searchInput{width:100%;padding:15px;background:#111;color:#fff;border:none;}
+.profile{display:none;margin-top:60px;text-align:center;}
+.profile img{width:120px;border-radius:50%;}
+#highlightBtn,#voteBtn{position:fixed;left:50%;transform:translateX(-50%);padding:10px 20px;border:none;border-radius:10px;z-index:200;}
+#highlightBtn{bottom:90px;background:#00ff88;}
+#voteBtn{bottom:40px;background:#ff0077;color:#fff;}
+#installBtn{position:fixed;bottom:20px;right:20px;padding:10px;background:#00ff88;color:#000;border:none;border-radius:10px;display:none;}
 </style>
 </head>
 <body>
-
 <video id="bgVideo" muted autoplay loop></video>
-
 <div class="topbar">
  <div class="tab active" onclick="switchTab('foryou',this)">For You</div>
  <div class="tab" onclick="switchTab('sub',this)">Abonniert</div>
@@ -27,12 +48,10 @@ body{margin:0;background:#000;color:#fff;font-family:sans-serif}
 <div id="foryou" class="grid"></div>
 <div id="sub" class="grid" style="display:none"></div>
 <div id="trending" class="grid" style="display:none"></div>
-
 <div id="searchPage" class="searchPage">
- <input class="searchInput" placeholder="🔍 Suche" oninput="search(this.value)">
+ <input class="searchInput" placeholder="Suche" oninput="search(this.value)">
  <div id="searchGrid" class="grid"></div>
 </div>
-
 <div id="profile" class="profile">
  <h2 id="username"></h2>
  <input id="nameInput" placeholder="Name"><br><br>
@@ -41,58 +60,75 @@ body{margin:0;background:#000;color:#fff;font-family:sans-serif}
  <button onclick="saveProfile()">Speichern</button>
 </div>
 
-<button id="highlightBtn" onclick="createHighlight()">⭐ Highlight</button>
-<button id="voteBtn" onclick="startVote()">🗳️ Vote</button>
-
+<button id="highlightBtn" onclick="createHighlight()">Highlight</button>
+<button id="voteBtn" onclick="startVote()">Vote</button>
 <div class="feed" id="feed">
- <div class="back" onclick="closeFeed()">⏎</div>
- <div class="sound" onclick="toggleSound()">🔊</div>
+ <div class="back" onclick="closeFeed()">Back</div>
+ <div class="sound" onclick="toggleSound()">Sound</div>
  <video id="video"></video>
-
- <div class="like" onclick="like()">❤️</div>
- <div class="fav" onclick="fav()">⭐</div>
+ <div class="like" onclick="like()">Like</div>
+ <div class="fav" onclick="fav()">Fav</div>
  <div id="views"></div>
-
  <div id="progress"></div>
 </div>
-
 <button id="installBtn">Install</button>
 
 <script>
-// Dein komplettes JavaScript aus vorherigem HTML
-// Anpassung: fetch('/api/videos') statt lokale uploads
-const uploads=""; // leer, da alles über Cloud API
-
-let data={}, allVideos=[], index=0, selectedVideos=[];
-let likes={}, views={}, favs={};
 const video=document.getElementById("video");
+const uploads="uploads/"; // Wird jetzt durch API ersetzt
+let data=[],index=0,selectedVideos=[],likes={},views={},favs={};
 
-/* Lade Videos von Server */
 async function load(){
-  const filesRes = await fetch('/api/videos');
-  const files = await filesRes.json();
-  allVideos = files.map(f => ({ch: '', v: f})); // channel leer, nur Dateiname
-
-  startBG();
-  loadGrid();
+ const res=await fetch('/api/videos');
+ data=await res.json(); // Array von Videonamen
+ loadGrid();
+ startBG();
 }
 
-/* BG-Video & Grid laden (wie vorher) */
-function startBG(){ /* ... */ }
-function loadGrid(){ /* ... */ }
-function search(q){ /* ... */ }
-function openFeed(i){ /* ... */ }
-function play(){ /* ... */ }
-function closeFeed(){ /* ... */ }
-function toggleSound(){ /* ... */ }
-function like(){ likes[index]=(likes[index]||0)+1; }
-function fav(){ favs[index]=true; }
+function loadGrid(){
+ const container=document.getElementById("foryou");
+ container.innerHTML="";
+ data.forEach((v,i)=>{
+   let vid=document.createElement("video");
+   vid.src=`/api/video/${v}`; // via Backblaze API
+   vid.muted=true;
+   vid.preload="metadata";
+   vid.onclick=()=>selectVideo(i,vid);
+   vid.ondblclick=()=>openFeed(i);
+   container.appendChild(vid);
+ });
+}
+
+function selectVideo(i,vid){
+ if(selectedVideos.includes(i)){selectedVideos=selectedVideos.filter(x=>x!==i);vid.classList.remove("selected");}
+ else{selectedVideos.push(i);vid.classList.add("selected");}
+}
+
+function openFeed(i){index=i;document.getElementById("feed").style.display="block";play();}
+function play(){video.src=`/api/video/${data[index]}`;video.play();}
+function closeFeed(){video.pause();video.src="";document.getElementById("feed").style.display="none";if(document.fullscreenElement)document.exitFullscreen();}
+function toggleSound(){video.muted=!video.muted;}
+function like(){likes[index]=(likes[index]||0)+1;}
+function fav(){favs[index]=true;}
 video.onplay=()=>views[index]=(views[index]||0)+1;
-video.ontimeupdate=()=>{ progress.style.width=(video.currentTime/video.duration*100)+"%"; }
-/* Highlight, Vote, Profile, Tabs, PWA (alles unverändert) */
+video.ontimeupdate=()=>document.getElementById("progress").style.width=(video.currentTime/video.duration*100)+"%";
+
+function switchTab(tab,el){
+ document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+ el.classList.add("active");
+ document.getElementById("foryou").style.display="none";
+ document.getElementById("sub").style.display="none";
+ document.getElementById("trending").style.display="none";
+ document.getElementById("searchPage").style.display="none";
+ document.getElementById("profile").style.display="none";
+ if(tab==="foryou") document.getElementById("foryou").style.display="grid";
+ if(tab==="search") document.getElementById("searchPage").style.display="block";
+ if(tab==="profile") document.getElementById("profile").style.display="block";
+}
+
+function saveProfile(){localStorage.setItem("username",document.getElementById("nameInput").value);document.getElementById("username").innerText=document.getElementById("nameInput").value;}
 
 window.onload=load;
 </script>
-
 </body>
 </html>
