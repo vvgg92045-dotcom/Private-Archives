@@ -1,0 +1,15 @@
+# Node modules
+node_modules/
+
+# Logs
+*.log
+
+# Environment files
+.env
+
+# Uploads lokal (optional, da du Cloud benutzt)
+uploads/
+
+# macOS / Windows / Linux temporäre Dateien
+.DS_Store
+Thumbs.db
