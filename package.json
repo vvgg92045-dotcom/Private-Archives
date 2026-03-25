@@ -1,17 +1,16 @@
 {
-  "name": "private-archives",
+  "name": "private-archive",
   "version": "1.0.0",
-  "description": "Full frontend + Node.js server with Cloud Upload",
+  "description": "Private Archive ULTIMATE with B2 cloud integration",
   "main": "index.js",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "multer": "^2.0.0",
-    "aws-sdk": "^2.1693.0"
-  },
-  "engines": {
-    "node": "20.x"
+    "backblaze-b2": "^1.6.0"
   }
 }
