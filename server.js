@@ -7,13 +7,26 @@ const uploadsDir = path.join(__dirname, 'uploads');
 app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(__dirname));
 
-app.get('/', (req,res)=>{
-  res.sendFile(path.join(__dirname,'index.html'));
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.get('/api/channels', (req,res)=>{
+app.get('/api/channels', (req, res) => {
   let result = {};
-  fs.readdirSync(uploadsDir).forEach(folder => {
+  if(fs.existsSync(uploadsDir)) {
+    fs.readdirSync(uploadsDir).forEach(folder => {
+      const folderPath = path.join(uploadsDir, folder);
+      if(fs.statSync(folderPath).isDirectory()) {
+        const videos = fs.readdirSync(folderPath).filter(f => f.endsWith('.mp4'));
+        if(videos.length > 0) result[folder] = videos;
+      }
+    });
+  }
+  res.json(result);
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server läuft auf Port ${PORT}`)); fs.readdirSync(uploadsDir).forEach(folder => {
     const folderPath = path.join(uploadsDir, folder);
     if(fs.statSync(folderPath).isDirectory()){
       const videos = fs.readdirSync(folderPath).filter(f => f.endsWith('.mp4'));
