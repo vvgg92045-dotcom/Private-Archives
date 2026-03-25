@@ -1,4 +1,4 @@
-// js/channel.js
+// channel.js
 const urlParams = new URLSearchParams(window.location.search);
 const channel = urlParams.get('channel');
 const content = document.getElementById("content");
