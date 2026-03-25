@@ -1,19 +1,16 @@
 {
   "name": "private-archive",
   "version": "1.0.0",
-  "description": "Private Archive App mit Backblaze B2 Cloud-Speicher",
+  "description": "Private Archive with Backblaze B2",
   "main": "index.js",
-  "type": "module",
-  "engines": {
-    "node": "20.x"
-  },
+  "engines": { "node": "20.x" },
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "@backblaze/b2": "^1.5.0",
-    "dotenv": "^16.3.1",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "dotenv": "^16.1.0",
+    "backblaze-b2": "^1.2.0"
   }
 }
