@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#000">
-<title>Private Archive ULTIMATE</title>
+<title>Private Archive ULTIMATE CLOUD</title>
 
 <style>
 body{margin:0;background:#000;color:#fff;font-family:sans-serif}
@@ -14,6 +14,309 @@ body{margin:0;background:#000;color:#fff;font-family:sans-serif}
  display:flex;justify-content:space-around;
  padding:10px;background:#000;
  position:fixed;top:0;width:100%;z-index:100;
+}
+.tab{opacity:.5;cursor:pointer}
+.tab.active{opacity:1;font-weight:bold}
+
+/* GRID */
+.grid{
+ display:grid;
+ grid-template-columns:repeat(3,1fr);
+ gap:5px;
+ padding:5px;
+ margin-top:60px;
+}
+.grid video{
+ width:100%;
+ aspect-ratio:9/16;
+ object-fit:cover;
+ border-radius:6px;
+}
+.selected{outline:3px solid #00ff88}
+
+/* BG */
+#bgVideo{
+ position:fixed;width:100%;height:100%;
+ object-fit:cover;z-index:-1;opacity:.25;
+}
+
+/* FEED */
+.feed{
+ display:none;
+ position:fixed;
+ width:100%;height:100%;
+ background:black;
+ z-index:999;
+}
+.feed video{
+ width:100%;height:100%;
+ object-fit:contain;
+}
+
+/* UI */
+.back,.sound{
+ position:absolute;width:45px;height:45px;
+ background:rgba(0,0,0,.6);
+ border-radius:50%;
+ display:flex;align-items:center;justify-content:center;
+ cursor:pointer;
+}
+.back{top:20px;left:20px;}
+.sound{top:20px;right:20px;}
+
+.like,.fav{
+ position:absolute;
+ right:20px;
+ font-size:30px;
+ cursor:pointer;
+}
+.like{bottom:140px;}
+.fav{bottom:90px;}
+
+#views{
+ position:absolute;bottom:60px;right:20px;font-size:14px;
+}
+
+#progress{
+ position:absolute;bottom:0;height:5px;background:#00ff88;width:0%;
+}
+
+/* SEARCH */
+.searchPage{display:none;margin-top:60px}
+.searchInput{
+ width:100%;padding:15px;background:#111;color:#fff;border:none;
+}
+
+/* PROFILE */
+.profile{display:none;margin-top:60px;text-align:center}
+.profile img{width:120px;border-radius:50%}
+
+/* BUTTONS */
+#highlightBtn,#voteBtn{
+ position:fixed;
+ left:50%;
+ transform:translateX(-50%);
+ padding:10px 20px;
+ border:none;border-radius:10px;
+ z-index:200;
+}
+#highlightBtn{bottom:90px;background:#00ff88;}
+#voteBtn{bottom:40px;background:#ff0077;color:#fff;}
+
+#installBtn{
+ position:fixed;bottom:20px;right:20px;
+ padding:10px;background:#00ff88;color:#000;
+ border:none;border-radius:10px;
+ display:none;
+}
+</style>
+</head>
+
+<body>
+
+<video id="bgVideo" muted autoplay loop></video>
+
+<div class="topbar">
+ <div class="tab active" onclick="switchTab('foryou',this)">For You</div>
+ <div class="tab" onclick="switchTab('search',this)">Suche</div>
+ <div class="tab" onclick="switchTab('profile',this)">Profil</div>
+</div>
+
+<div id="foryou" class="grid"></div>
+
+<div id="searchPage" class="searchPage">
+ <input class="searchInput" placeholder="🔍 Suche" oninput="search(this.value)">
+ <div id="searchGrid" class="grid"></div>
+</div>
+
+<div id="profile" class="profile">
+ <h2 id="username"></h2>
+ <img id="profileImg"><br><br>
+ <input id="nameInput" placeholder="Name"><br><br>
+ <button onclick="saveProfile()">Speichern</button>
+</div>
+
+<button id="highlightBtn" onclick="createHighlight()">🎬 Highlight</button>
+<button id="voteBtn" onclick="startVote()">⚔️ Vote</button>
+
+<div class="feed" id="feed">
+ <div class="back" onclick="closeFeed()">←</div>
+ <div class="sound" onclick="toggleSound()">🔊</div>
+ <video id="video"></video>
+
+ <div class="like" onclick="like()">❤️</div>
+ <div class="fav" onclick="fav()">⭐</div>
+ <div id="views"></div>
+
+ <div id="progress"></div>
+</div>
+
+<button id="installBtn">Install</button>
+
+<script>
+
+/* CLOUDINARY VIDEOS */
+let allVideos = [
+ {
+  ch:"main",
+  url:"https://res.cloudinary.com/do5gpmvvg/video/upload/q_auto/sample.mp4"
+ }
+];
+
+/* PROFILE DEFAULT */
+localStorage.setItem("profileImg","https://res.cloudinary.com/do5gpmvvg/image/upload/f_auto,q_auto/profile_pygvp9");
+
+let index=0,selectedVideos=[];
+let likes={},views={},favs={};
+
+const video=document.getElementById("video");
+
+/* LOAD */
+function load(){
+ startBG();
+ loadGrid();
+ loadProfile();
+}
+
+/* BACKGROUND */
+function startBG(){
+ let vids=allVideos.map(v=>v.url);
+ let i=0;
+ function next(){
+  bgVideo.src=vids[i];
+  bgVideo.play();
+  i=(i+1)%vids.length;
+ }
+ bgVideo.onended=next;
+ next();
+}
+
+/* GRID */
+function loadGrid(){
+ foryou.innerHTML="";
+ allVideos.forEach((v,i)=>{
+  let vid=document.createElement("video");
+  vid.src=v.url;
+  vid.muted=true;
+
+  vid.onclick=()=>{
+   if(selectedVideos.includes(i)){
+    selectedVideos=selectedVideos.filter(x=>x!==i);
+    vid.classList.remove("selected");
+   }else{
+    selectedVideos.push(i);
+    vid.classList.add("selected");
+   }
+  };
+
+  vid.ondblclick=()=>openFeed(i);
+
+  foryou.appendChild(vid);
+ });
+}
+
+/* SEARCH */
+function search(q){
+ searchGrid.innerHTML="";
+ allVideos.forEach((v,i)=>{
+  if(v.ch.toLowerCase().includes(q.toLowerCase())){
+   let vid=document.createElement("video");
+   vid.src=v.url;
+   vid.onclick=()=>openFeed(i);
+   searchGrid.appendChild(vid);
+  }
+ });
+}
+
+/* FEED */
+function openFeed(i){
+ index=i;
+ feed.style.display="block";
+ play();
+}
+
+function play(){
+ video.src=allVideos[index].url;
+ video.play();
+}
+
+function closeFeed(){
+ video.pause();
+ video.src="";
+ feed.style.display="none";
+}
+
+/* SOUND */
+function toggleSound(){
+ video.muted=!video.muted;
+}
+
+/* LIKE */
+function like(){likes[index]=(likes[index]||0)+1;}
+function fav(){favs[index]=true;}
+video.onplay=()=>views[index]=(views[index]||0)+1;
+
+/* PROGRESS */
+video.ontimeupdate=()=>{
+ progress.style.width=(video.currentTime/video.duration*100)+"%";
+};
+
+/* SWIPE */
+let startY=0;
+feed.addEventListener("touchstart",e=>startY=e.touches[0].clientY);
+feed.addEventListener("touchend",e=>{
+ let endY=e.changedTouches[0].clientY;
+ if(startY-endY>50) next();
+ if(endY-startY>50) prev();
+});
+function next(){index=(index+1)%allVideos.length;play();}
+function prev(){index=(index-1+allVideos.length)%allVideos.length;play();}
+
+/* HIGHLIGHT */
+async function createHighlight(){
+ if(selectedVideos.length<2){alert("Mind. 2 Videos!");return;}
+
+ const canvas=document.createElement("canvas");
+ const ctx=canvas.getContext("2d");
+ const stream=canvas.captureStream(30);
+ const rec=new MediaRecorder(stream);
+
+ let chunks=[];
+ rec.ondataavailable=e=>chunks.push(e.data);
+
+ rec.onstop=()=>{
+   const url=URL.createObjectURL(new Blob(chunks));
+   let v=document.createElement("video");
+   v.src=url;v.controls=true;v.autoplay=true;
+   v.style.position="fixed";
+   v.style.width="80%";
+   v.style.top="50%";
+   v.style.left="50%";
+   v.style.transform="translate(-50%,-50%)";
+   document.body.appendChild(v);
+ };
+
+ rec.start();
+
+ for(let i of selectedVideos){
+   await clip(i,ctx,canvas);
+ }
+
+ rec.stop();
+ selectedVideos=[];
+}
+
+function clip(i,ctx,canvas){
+ return new Promise(res=>{
+   let v=document.createElement("video");
+   v.src=allVideos[i].url;
+   v.muted=true;
+
+   v.onloadeddata=()=>{
+     canvas.width=v.videoWidth;
+     canvas.height=v.videoHeight;
+
+     v.currentTime position:fixed;top:0;width:100%;z-index:100;
 }
 .tab{opacity:.5;cursor:pointer}
 .tab.active{opacity:1;font-weight:bold}
@@ -356,7 +659,7 @@ function clip(i,ctx,canvas){
 
 /* VOTE SYSTEM */
 function startVote(){
- if(selectedVideos.length<2){alert("2 Videos w�hlen!");return;}
+ if(selectedVideos.length<2){alert("2 Videos wählen!");return;}
 
  let a=selectedVideos[0],b=selectedVideos[1];
 
@@ -374,7 +677,7 @@ function startVote(){
  `;
 
  box.onclick=e=>{
-   alert("Gew�hlt!");
+   alert("Gewählt!");
    box.remove();
  };
 
