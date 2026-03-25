@@ -1,49 +1,93 @@
-import express from 'express';
-import cors from 'cors';
-import B2 from 'backblaze-b2';
-import dotenv from 'dotenv';
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import B2 from "backblaze-b2";
+
 dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+const PORT = process.env.PORT || 3000;
+
+// --- Backblaze B2 Setup ---
 const b2 = new B2({
-  applicationKeyId: process.env.B2_KEY_ID,
-  applicationKey: process.env.B2_APP_KEY
+  accountId: process.env.B2_ACCOUNT_ID,
+  applicationKey: process.env.B2_APPLICATION_KEY
 });
 
 await b2.authorize();
 
-// Endpunkt, der alle Videos auflistet
-app.get('/api/channels', async (req, res) => {
-  try {
+// --- Helper: Liste aller Dateien pro Channel ---
+async function listFiles() {
+  const bucketId = await getBucketId();
+  let files = [];
+  let next = null;
+
+  do {
     const response = await b2.listFileNames({
-      bucketId: process.env.B2_BUCKET_ID,
+      bucketId,
+      startFileName: next,
       maxFileCount: 1000
     });
+    files = files.concat(response.data.files);
+    next = response.data.nextFileName;
+  } while (next);
 
-    const files = response.data.files.map(f => f.fileName); // z.B. "Dead Or Alive/video1.mp4"
-    
-    // URL generieren
-    const urls = files.map(f => `https://${process.env.B2_ENDPOINT}/${process.env.B2_BUCKET_NAME}/${f}`);
-    
-    // Gruppieren nach Ordner (Channel)
-    const channels = {};
-    urls.forEach(url => {
-      const parts = url.split('/');
-      const ch = parts[parts.length - 2]; // Ordnername
-      const file = parts[parts.length - 1]; 
-      if (!channels[ch]) channels[ch] = [];
-      channels[ch].push(file);
-    });
+  // Gruppiere nach Channel (Ordnerstruktur: channel/file)
+  const channels = {};
+  files.forEach(f => {
+    const parts = f.fileName.split("/");
+    const ch = parts[0];
+    const file = parts.slice(1).join("/");
+    if (!channels[ch]) channels[ch] = [];
+    channels[ch].push(file);
+  });
+  return channels;
+}
 
+async function getBucketId() {
+  const buckets = await b2.listBuckets();
+  const bucket = buckets.data.buckets.find(b => b.bucketName === process.env.B2_BUCKET_NAME);
+  return bucket.bucketId;
+}
+
+// --- API Endpoints ---
+
+// Liste aller Channels und Videos
+app.get("/api/channels", async (req, res) => {
+  try {
+    const channels = await listFiles();
     res.json(channels);
   } catch (err) {
     console.error(err);
-    res.status(500).send('Error fetching files from Backblaze R2');
+    res.status(500).json({ error: "Failed to list channels" });
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Video Stream
+app.get("/api/video/:channel/:file", async (req, res) => {
+  try {
+    const bucketId = await getBucketId();
+    const { channel, file } = req.params;
+    const fileName = `${channel}/${file}`;
+
+    const auth = await b2.getDownloadAuthorization({
+      bucketId,
+      fileNamePrefix: fileName,
+      validDurationInSeconds: 3600
+    });
+
+    const downloadUrl = `https://f000.backblazeb2.com/file/${process.env.B2_BUCKET_NAME}/${fileName}?Authorization=${auth.data.authorizationToken}`;
+    res.redirect(downloadUrl);
+  } catch (err) {
+    console.error(err);
+    res.status(404).json({ error: "File not found" });
+  }
+});
+
+// --- Start Server ---
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
