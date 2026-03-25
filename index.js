@@ -11,31 +11,31 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-// --- Backblaze B2 Setup ---
+// Backblaze B2 Setup
 const b2 = new B2({
   accountId: process.env.B2_ACCOUNT_ID,
   applicationKey: process.env.B2_APPLICATION_KEY
 });
-
 await b2.authorize();
 
-// --- Helper: Liste aller Dateien pro Channel ---
+async function getBucketId() {
+  const buckets = await b2.listBuckets();
+  const bucket = buckets.data.buckets.find(b => b.bucketName === process.env.B2_BUCKET_NAME);
+  if (!bucket) throw new Error("Bucket not found");
+  return bucket.bucketId;
+}
+
 async function listFiles() {
   const bucketId = await getBucketId();
   let files = [];
   let next = null;
 
   do {
-    const response = await b2.listFileNames({
-      bucketId,
-      startFileName: next,
-      maxFileCount: 1000
-    });
+    const response = await b2.listFileNames({ bucketId, startFileName: next, maxFileCount: 1000 });
     files = files.concat(response.data.files);
     next = response.data.nextFileName;
   } while (next);
 
-  // Gruppiere nach Channel (Ordnerstruktur: channel/file)
   const channels = {};
   files.forEach(f => {
     const parts = f.fileName.split("/");
@@ -47,15 +47,7 @@ async function listFiles() {
   return channels;
 }
 
-async function getBucketId() {
-  const buckets = await b2.listBuckets();
-  const bucket = buckets.data.buckets.find(b => b.bucketName === process.env.B2_BUCKET_NAME);
-  return bucket.bucketId;
-}
-
-// --- API Endpoints ---
-
-// Liste aller Channels und Videos
+// API Endpoints
 app.get("/api/channels", async (req, res) => {
   try {
     const channels = await listFiles();
@@ -66,7 +58,6 @@ app.get("/api/channels", async (req, res) => {
   }
 });
 
-// Video Stream
 app.get("/api/video/:channel/:file", async (req, res) => {
   try {
     const bucketId = await getBucketId();
@@ -87,7 +78,7 @@ app.get("/api/video/:channel/:file", async (req, res) => {
   }
 });
 
-// --- Start Server ---
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Serve static HTML (optional)
+app.use(express.static("public"));
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
