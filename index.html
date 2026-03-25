@@ -3,17 +3,119 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#000">
-<title>Private Archive ULTIMATE CLOUD</title>
+<title>Private Archive PRO</title>
+
+<link rel="manifest" href="manifest.json">
 
 <style>
-body{margin:0;background:#000;color:#fff;font-family:sans-serif}
+body{margin:0;background:#000;color:#fff;font-family:sans-serif;overflow:hidden;}
+h1{text-align:center;padding:10px;}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:5px;margin-top:50px;}
+.grid video{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:6px;cursor:pointer;}
+#uploadBtn{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#00ff88;border:none;padding:15px;border-radius:50%;font-size:24px;z-index:100;}
+.feed{display:none;position:fixed;width:100%;height:100%;background:black;z-index:999;}
+.feed video{width:100%;height:100%;object-fit:contain;}
+.back{position:absolute;top:20px;left:20px;width:50px;height:50px;background:rgba(0,0,0,.6);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;z-index:100;}
+.vote-container{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:101;}
+.vote-btn{padding:10px 20px;background:#00ff88;border:none;border-radius:6px;font-size:16px;cursor:pointer;}
+</style>
+</head>
+<body>
 
-/* NAV */
-.topbar{
- display:flex;justify-content:space-around;
- padding:10px;background:#000;
- position:fixed;top:0;width:100%;z-index:100;
+<h1>🎬 Private Archive</h1>
+<div id="grid" class="grid"></div>
+
+<button id="uploadBtn">＋</button>
+
+<div class="feed" id="feed">
+ <div class="back" id="backBtn">←</div>
+ <video id="video" controls></video>
+ <div class="vote-container">
+   <button class="vote-btn" onclick="vote('up')">👍 Like</button>
+   <button class="vote-btn" onclick="vote('down')">👎 Dislike</button>
+ </div>
+</div>
+
+<script>
+/* ⚠️ Hier DEIN Cloudinary Account eintragen */
+const CLOUD_NAME = "do5gpmvvg";
+const UPLOAD_PRESET = "archive_upload";
+
+/* VIDEOS ARRAY */
+let allVideos = JSON.parse(localStorage.getItem("videos")) || [];
+
+/* GRID RENDER */
+function renderGrid(){
+ const grid = document.getElementById("grid");
+ grid.innerHTML="";
+ allVideos.forEach((v,i)=>{
+   const vid = document.createElement("video");
+   vid.src=v.url;
+   vid.onclick=()=>openFeed(i);
+   grid.appendChild(vid);
+ });
+}
+
+/* FEED */
+let currentIndex = 0;
+const feed = document.getElementById("feed");
+const videoEl = document.getElementById("video");
+
+function openFeed(i){
+ currentIndex = i;
+ feed.style.display="block";
+ videoEl.src=allVideos[i].url;
+ videoEl.play();
+}
+
+document.getElementById("backBtn").onclick = ()=>{
+ videoEl.pause();
+ feed.style.display="none";
+}
+
+/* VOTE */
+function vote(type){
+ if(!allVideos[currentIndex].votes) allVideos[currentIndex].votes={up:0,down:0};
+ allVideos[currentIndex].votes[type]++;
+ localStorage.setItem("videos",JSON.stringify(allVideos));
+ alert(`Votes: 👍 ${allVideos[currentIndex].votes.up} 👎 ${allVideos[currentIndex].votes.down}`);
+}
+
+/* UPLOAD */
+document.getElementById("uploadBtn").onclick = ()=>{
+ let input = document.createElement("input");
+ input.type="file";
+ input.accept="video/*";
+ input.onchange = async ()=>{
+   let file = input.files[0];
+   let formData = new FormData();
+   formData.append("file", file);
+   formData.append("upload_preset", UPLOAD_PRESET);
+   try{
+     const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`,{
+       method:"POST", body:formData
+     });
+     const data = await res.json();
+     allVideos.push({url:data.secure_url});
+     localStorage.setItem("videos",JSON.stringify(allVideos));
+     renderGrid();
+     alert("Upload abgeschlossen 🚀");
+   }catch(e){alert("Upload fehlgeschlagen");console.error(e);}
+ };
+ input.click();
+}
+
+/* PWA Service Worker */
+if('serviceWorker' in navigator){
+ navigator.serviceWorker.register('/sw.js').then(()=>console.log("SW registered"));
+}
+
+/* INITIAL LOAD */
+window.onload = renderGrid;
+
+</script>
+</body>
+</html>%;z-index:100;
 }
 .tab{opacity:.5;cursor:pointer}
 .tab.active{opacity:1;font-weight:bold}
