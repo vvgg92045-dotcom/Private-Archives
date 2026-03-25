@@ -1,19 +1,29 @@
-// server.js
 const express = require('express');
+const fs = require('fs');
 const path = require('path');
 const app = express();
+const uploadsDir = path.join(__dirname, 'uploads');
 
-// Port für Render
-const PORT = process.env.PORT || 3000;
+app.use('/uploads', express.static(uploadsDir));
+app.use(express.static(__dirname));
 
-// Statische Dateien
-app.use(express.static(path.join(__dirname)));
-
-// Startseite
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+app.get('/', (req,res)=>{
+  res.sendFile(path.join(__dirname,'index.html'));
 });
 
+app.get('/api/channels', (req,res)=>{
+  let result = {};
+  fs.readdirSync(uploadsDir).forEach(folder => {
+    const folderPath = path.join(uploadsDir, folder);
+    if(fs.statSync(folderPath).isDirectory()){
+      const videos = fs.readdirSync(folderPath).filter(f => f.endsWith('.mp4'));
+      if(videos.length>0) result[folder]=videos;
+    }
+  });
+  res.json(result);
+});
+
+app.listen(process.env.PORT || 3000, () => console.log('Server läuft'));
 // Service Worker und Manifest
 app.get('/sw.js', (req,res) => res.sendFile(path.join(__dirname,'sw.js')));
 app.get('/manifest.json', (req,res) => res.sendFile(path.join(__dirname,'manifest.json')));
