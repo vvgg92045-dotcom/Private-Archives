@@ -3,14 +3,22 @@ const express = require('express');
 const path = require('path');
 const app = express();
 
+// Port für Render
 const PORT = process.env.PORT || 3000;
 
 // Statische Dateien
 app.use(express.static(path.join(__dirname)));
 
-// Route für Startseite
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+// Startseite
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Service Worker und Manifest
+app.get('/sw.js', (req,res) => res.sendFile(path.join(__dirname,'sw.js')));
+app.get('/manifest.json', (req,res) => res.sendFile(path.join(__dirname,'manifest.json')));
+
+app.listen(PORT, () => console.log(`Server läuft auf Port ${PORT}`)); res.sendFile(path.join(__dirname, "index.html"));
 });
 
 // Optional: API für Videos (falls nötig)
