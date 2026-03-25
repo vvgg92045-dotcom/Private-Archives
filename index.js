@@ -1,20 +1,24 @@
 import express from 'express';
 import B2 from 'backblaze-b2';
 import cors from 'cors';
+import dotenv from 'dotenv';
+
+dotenv.config(); // Load .env if exists
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 const b2 = new B2({
-  applicationKeyId: 'YOUR_KEY_ID',       // Replace with your B2 app key ID
-  applicationKey: 'YOUR_APP_KEY'         // Replace with your B2 app key
+  applicationKeyId: process.env.B2_KEY_ID || 'YOUR_KEY_ID',
+  applicationKey: process.env.B2_APP_KEY || 'YOUR_APP_KEY'
 });
 
 await b2.authorize();
 
-const BUCKET = 'private-archive-videos';
+const BUCKET = process.env.BUCKET_NAME || 'private-archive-videos';
 
+// Endpoint to return all videos/images by channel
 app.get('/api/channels', async (req, res) => {
   try {
     const list = await b2.listFileNames({ bucketId: BUCKET });
@@ -32,6 +36,8 @@ app.get('/api/channels', async (req, res) => {
     res.status(500).send('Error fetching files from B2');
   }
 });
+
+app.use(express.static('public'));
 
 app.listen(process.env.PORT || 3000, () => {
   console.log('Server running');
