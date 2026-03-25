@@ -1,0 +1,26 @@
+body { margin:0; font-family:Arial; background:#000; color:#fff; }
+
+/* STARTSEITE + KANÄLE */
+.content { display:flex; flex-wrap:wrap; justify-content:center; padding:20px; }
+.channel-card { width:140px; margin:15px; text-align:center; cursor:pointer; transition: transform 0.2s; }
+.channel-card:hover { transform: scale(1.05); }
+.channel-card img { width:100%; border-radius:50%; }
+.channel-card span { display:block; margin-top:8px; font-size:15px; font-weight:bold; }
+
+/* KANAL GRID */
+.video-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; padding:20px; }
+.video-grid video { width:100%; height:auto; cursor:pointer; }
+
+/* FEED */
+.feed { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:50; }
+.feed video { width:100%; height:100%; object-fit:contain; background:black; }
+.back-arrow {
+  position:absolute; top:20px; left:15px; width:50px; height:50px;
+  background:rgba(0,0,0,0.6); border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:24px; color:white; cursor:pointer; z-index:55;
+}
+
+/* BANNER */
+.banner { position:relative; width:100%; height:200px; overflow:hidden; margin-bottom:10px; }
+.banner img { width:100%; height:100%; object-fit:cover; filter: blur(15px) brightness(0.4); }
+.banner .name { position:absolute; bottom:10px; left:20px; font-size:26px; font-weight:bold; color:#fff; }
