@@ -1,47 +1,38 @@
-const express = require('express');
-const multer = require('multer');
-const AWS = require('aws-sdk');
-const path = require('path');
+import express from 'express';
+import B2 from 'backblaze-b2';
+import cors from 'cors';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+app.use(cors());
+app.use(express.json());
 
-// Statische Dateien ausliefern
-app.use(express.static('public'));
-
-// Multer für Uploads (im Speicher)
-const upload = multer({ storage: multer.memoryStorage() });
-
-// AWS S3 Konfiguration
-const s3 = new AWS.S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION
+const b2 = new B2({
+  applicationKeyId: 'YOUR_KEY_ID',       // Replace with your B2 app key ID
+  applicationKey: 'YOUR_APP_KEY'         // Replace with your B2 app key
 });
 
-// Upload Route
-app.post('/upload', upload.single('file'), async (req, res) => {
-  if (!req.file) return res.status(400).send('Keine Datei hochgeladen');
+await b2.authorize();
 
-  const params = {
-    Bucket: process.env.AWS_BUCKET_NAME,
-    Key: req.file.originalname,
-    Body: req.file.buffer
-  };
+const BUCKET = 'private-archive-videos';
 
+app.get('/api/channels', async (req, res) => {
   try {
-    const data = await s3.upload(params).promise();
-    res.send({ message: 'Upload erfolgreich!', url: data.Location });
+    const list = await b2.listFileNames({ bucketId: BUCKET });
+    const data = {};
+
+    list.data.files.forEach(file => {
+      const [channel, fileName] = file.fileName.split('/');
+      if (!data[channel]) data[channel] = [];
+      data[channel].push(`https://f002.backblazeb2.com/file/${BUCKET}/${file.fileName}`);
+    });
+
+    res.json(data);
   } catch (err) {
     console.error(err);
-    res.status(500).send('Fehler beim Upload');
+    res.status(500).send('Error fetching files from B2');
   }
 });
 
-// Fallback für alle anderen Routen
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+app.listen(process.env.PORT || 3000, () => {
+  console.log('Server running');
 });
-
-// Server starten
-app.listen(PORT, () => console.log(`Server läuft auf Port ${PORT}`));
